@@ -56,5 +56,4 @@ clawhub install mind --registry https://cn.clawhub-mirror.com
 
 ---
 
-## 📄 README in other languages
 
