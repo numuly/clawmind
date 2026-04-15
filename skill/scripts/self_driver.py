@@ -255,6 +255,14 @@ def drive():
         state["driver"]["patterns"] = state["driver"]["patterns"][-20:]
     _prune_log(state)
     _dedup_projects(state)
+
+    # WAL Protocol: 记录本次探索摘要（供自由时段复盘）
+    state["driver"]["last_exploration"] = {
+        "action": action,
+        "health": round(health, 3),
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
     _save_state(state)
 
     return {
