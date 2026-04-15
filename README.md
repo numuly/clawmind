@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/badge/Release-v1.0.0-blue?logo=github)](https://github.com/numuly/mind/releases/latest)
 
 ---
-<center>[中文](docs/README_zh.md) · [English](docs/README_en.md)</center>
+[中文](docs/README_zh.md) · [English](docs/README_en.md)
 
 
 ## Features
