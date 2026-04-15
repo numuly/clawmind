@@ -65,14 +65,17 @@ def _parse_progress(entry: str) -> int:
 def _is_success(entry: str) -> bool:
     """判断日志条目是否为成功。正向词存在且无负向词才算成功。"""
     neg_kw = ['失败', '卡住', '❌', 'error', 'err', 'failed', 'stuck']
-    pos_kw = ['完成', '成功', '✅', 'done', 'completed', 'pass']
     if any(kw in entry for kw in neg_kw):
         return False
     # 英文词用词边界匹配，避免 ClawHub → ok 这类误匹配
     for kw in ['done', 'completed', 'pass']:
         if re.search(r'(?<![a-zA-Z])' + kw + r'(?![a-zA-Z])', entry, re.IGNORECASE):
             return True
-    return any(kw in entry for kw in ['完成', '成功', '✅'])
+    # 中文词：排除"未完成""无完成"等否定上下文
+    for kw in ['完成', '成功', '✅']:
+        if kw in entry and not re.search(r'(未|无|没有|尚未|还未)\s*' + kw, entry):
+            return True
+    return False
 
 
 def calc_health(state: dict) -> float:
