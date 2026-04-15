@@ -71,13 +71,17 @@ def calc_diversity_score(repos: list) -> float:
     if not langs:
         return 0.5
     
-    # 计算语言分布的熵（归一化）
+    # 计算语言分布的香农熵（归一化）
+    import math
     from collections import Counter
     freq = Counter(langs)
     total = len(langs)
-    entropy = sum((c/total) * (c/total) for c in freq.values())  # 简化：取平方和而非熵
-    # 单一语言=0.25, 多种语言更高
-    return min(1.0, entropy * 2)
+    # 正确的香农熵: -Σ(p * log2(p))
+    entropy = -sum((c / total) * math.log2(c / total) for c in freq.values())
+    # 最大熵 = log2(k)，归一化到 [0, 1]
+    k = len(freq)
+    max_entropy = math.log2(k) if k > 1 else 1.0
+    return min(1.0, entropy / max_entropy)
 
 
 def calc_signal_score(repos: list, hn_hits: list) -> float:
