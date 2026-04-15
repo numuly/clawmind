@@ -8,6 +8,7 @@
 [![Release](https://img.shields.io/badge/Release-v1.0.0-blue?logo=github)](https://github.com/numuly/mind/releases/latest)
 
 ---
+[中文](docs/README_zh.md) · [English](docs/README_en.md)
 
 ## Features
 
@@ -56,4 +57,3 @@ clawhub install mind --registry https://cn.clawhub-mirror.com
 
 ## 📄 README in other languages
 
-[中文](docs/README_zh.md) · [English](docs/README_en.md)
