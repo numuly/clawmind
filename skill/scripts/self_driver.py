@@ -13,8 +13,6 @@ from datetime import datetime
 from typing import Optional
 
 STATE_FILE = "/home/node/.openclaw/workspace/state/current_state.json"
-DRIVER_FILE = "/home/node/.openclaw/workspace/state/self_driver.json"
-
 # ----------------- 状态读写 -----------------
 
 def _load(path: str) -> dict:
@@ -28,6 +26,29 @@ def _save(path: str, data: dict):
     with open(path, "w") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+
+
+# ----------------- 优化状态管理（单文件 + 脏标记）-----------------
+STATE_FILE = "/home/node/.openclaw/workspace/state/current_state.json"
+_dirty = False
+
+def _mark_dirty():
+    global _dirty
+    _dirty = True
+
+def _load_state() -> dict:
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE) as f:
+            return json.load(f)
+    return {"log": [], "projects": [], "current_task": {}, "driver": {}}
+
+def _save_state(state: dict):
+    global _dirty
+    if not _dirty:
+        return
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+    _dirty = False
 
 # ----------------- 健康度计算 -----------------
 
@@ -133,6 +154,7 @@ def trigger_reflection(driver: dict) -> dict:
 
     driver["consecutive_low"] = consecutive_low + 1
     driver["last_reflect_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _mark_dirty()
 
     return {
         "question": question,
@@ -165,40 +187,71 @@ def learn_pattern(success: bool, context: str, driver: dict):
     }
     patterns.append(pattern)
     # 只保留最近 20 条
-    driver["patterns"] = patterns[-20:]
+    state["driver"]["patterns"] = patterns[-20:]
 
 
 # ----------------- 主循环 -----------------
+
+
+def _prune_log(state: dict):
+    """日志裁剪到最近20条，防止文件膨胀"""
+    if len(state.get("log", [])) > 20:
+        state["log"] = state["log"][-20:]
+        _mark_dirty()
+
+def _dedup_projects(state: dict):
+    """项目列表写入时去重（按名称）"""
+    seen = set()
+    result = []
+    for p in state.get("projects", []):
+        if p["name"] not in seen:
+            seen.add(p["name"])
+            result.append(p)
+    if len(result) < len(state.get("projects", [])):
+        state["projects"] = result
+        _mark_dirty()
 
 def drive():
     """
     心跳自驱力主循环。
     返回 (action: str, health: float, reflect_result: dict or None)
     """
-    state = _load(STATE_FILE)
-    driver = _load(DRIVER_FILE)
+    state = _load_state()
 
-    # 初始化
-    if "patterns" not in driver:
-        driver["patterns"] = []
-    if "consecutive_low" not in driver:
-        driver["consecutive_low"] = 0
+    # 初始化 driver 子状态
+    if "patterns" not in state.get("driver", {}):
+        state.setdefault("driver", {})["patterns"] = []
+    if "consecutive_low" not in state.get("driver", {}):
+        state.setdefault("driver", {})["consecutive_low"] = 0
 
     health = calc_health(state)
-    driver["last_health"] = health
-    driver["last_check_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    state["driver"]["last_health"] = health
+    state["driver"]["last_check_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     reflect_result = None
     action = "continue"
 
     if should_reflect(health):
-        reflect_result = trigger_reflection(driver)
+        reflect_result = trigger_reflection(state.get("driver", {}))
         action = "reflect"
     elif health >= 0.7:
         action = "push_forward"  # 状态好，可以挑战更多
-        driver["consecutive_low"] = 0  # 重置低健康计数器
+        state["driver"]["consecutive_low"] = 0  # 重置低健康计数器
 
-    _save(DRIVER_FILE, driver)
+    # 自动记录学习模式
+    log = state.get("log", [])
+    if log:
+        last = log[-1].get("entry", "")
+        if "完成" in last or "成功" in last:
+            state["driver"].setdefault("patterns", []).append({
+                "type": "success",
+                "context": last[:50],
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            state["driver"]["patterns"] = state["driver"]["patterns"][-20:]
+    _prune_log(state)
+    _dedup_projects(state)
+    _save_state(state)
 
     return {
         "action": action,
@@ -210,13 +263,14 @@ def drive():
 
 
 def get_driver_status() -> dict:
-    driver = _load(DRIVER_FILE)
+    s = _load_state()
+    d = s.get("driver", {})
     return {
-        "health": driver.get("last_health", None),
-        "consecutive_low": driver.get("consecutive_low", 0),
-        "last_check": driver.get("last_check_time", "从未"),
-        "last_reflect": driver.get("last_reflect_time", "从未"),
-        "pattern_count": len(driver.get("patterns", [])),
+        "health": d.get("last_health", None),
+        "consecutive_low": d.get("consecutive_low", 0),
+        "last_check": d.get("last_check_time", "从未"),
+        "last_reflect": d.get("last_reflect_time", "从未"),
+        "pattern_count": len(d.get("patterns", [])),
     }
 
 
@@ -360,6 +414,7 @@ def score_action(proposal: dict, driver: dict) -> float:
     if "task" in tags:
         feasibility = 0.8  # 任务类提案通常可行
     if consecutive_low > 2:
+        _mark_dirty()
         feasibility *= 0.7  # 连续低迷时降低预期
     if len([p for p in patterns if p["type"] == "success"]) > 3:
         feasibility = min(1.0, feasibility * 1.2)  # 成功经验多则提升
@@ -398,8 +453,8 @@ if __name__ == "__main__":
         import pprint
         pprint.pprint(get_driver_status())
     elif len(sys.argv) > 1 and sys.argv[1] == "propose":
-        state = _load(STATE_FILE)
-        driver = _load(DRIVER_FILE)
+        state = _load_state()
+        driver = state.get("driver", {})
         proposals = propose(state)
         best = select_best_action(proposals, driver)
         print("=== 提案评分 ===")
