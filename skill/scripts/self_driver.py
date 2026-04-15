@@ -118,10 +118,11 @@ def calc_health(state: dict) -> float:
         elif progress_values[-1] < progress_values[-2]:
             momentum_score = 0.0  # 下降势头
     
-    # 4. 连续失败惩罚（0 或 -0.15）
-    last_3 = [e.get("entry", "") for e in recent[-3:]]
-    failures = [e for e in last_3 if not _is_success(e) and _parse_progress(e) < 0]
-    fail_penalty = 0.15 if len(failures) == 3 else 0.0
+    # 4. 连续失败惩罚（0 或 -0.15）：只看明确的负向关键词
+    fail_kw = ['失败', '❌', 'error', 'err', 'failed', 'stuck']
+    last_3_entries = [e.get("entry", "") for e in recent[-3:]]
+    failure_count = sum(1 for e in last_3_entries if any(kw in e for kw in fail_kw))
+    fail_penalty = 0.15 if failure_count == 3 else 0.0
     
     # 5. 完成奖励（+0.1）：任何条目达到 100%
     completion_bonus = 0.1 if any(_parse_progress(e.get("entry", "")) == 100 for e in recent) else 0.0
@@ -190,7 +191,7 @@ def learn_pattern(success: bool, context: str, driver: dict):
     }
     patterns.append(pattern)
     # 只保留最近 20 条
-    state["driver"]["patterns"] = patterns[-20:]
+    driver["patterns"] = patterns[-20:]
 
 
 # ----------------- 主循环 -----------------
