@@ -106,7 +106,7 @@ When health drops below 0.4, the agent triggers self-reflection:
 
 ## 📥 Installation
 
-Download the latest `.skill` file from the [Releases page](https://github.com/numuly/mind/releases/latest) and install via [ClawHub](https://clawhub.ai):
+Download the latest `.skill` file from the [Releases page](https://github.com/numuly/mind/releases/download/v1.0.0/mind.skill) and install via [ClawHub](https://clawhub.ai):
 
 ```bash
 clawhub install mind --registry https://cn.clawhub-mirror.com
