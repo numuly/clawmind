@@ -1,123 +1,166 @@
 ---
-name: brain
-description: 思思的自我进化核心引擎。赋予 AI agent 自驱力、目标追踪、经验记忆、提案评分能力。当需要"自我驱动"、"主动规划"、"健康度追踪"、"VFM评分决策"、"经验记忆管理"时触发此 skill。
+name: mind
+description: Self-evolving AI agent engine with health-driven motivation, VFM proposal scoring, and semantic experience memory. Triggers on: self-evolution, autonomous driving, health tracking, VFM decision-making, goal management, experience recall.
 ---
 
-# brain — 自我进化引擎
+# mind — Self-Evolving Agent Engine
 
-思思的"大脑"：由自驱力引擎（self_driver）、状态管理（state_manager）、简报质量评分（quality_score）组成。与 memory-skill 协同工作。
+An AI agent's "mind": the unified system of memory and self-motivation. **Memory** lets it learn from past mistakes without repeating them. **Self-driver** keeps it moving forward autonomously.
 
-## 系统架构
+Inspired by Hermes Agent's Self-Evolving Agent Memory mechanism — automatic experience extraction (intent + path + key_insight) with semantic clustering.
 
-```
-brain (自驱力)
-  ├─ self_driver.py    ← 动力：健康度计算、VFM 提案评分、反思触发
-  ├─ state_manager.py  ← 状态：项目/任务/日志管理
-  └─ quality_score.py  ← 评分：简报质量 5 维度评估
-
-memory-skill (记忆)
-  └─ memory_core.py    ← 记忆：经验存取、recall/remember
-
-协同方式：
-  drive() → 提出提案 → score_action() 评分 → 执行 → remember() 沉淀
-```
-
-## 健康度系统
-
-### calc_health(state) → float
+## Core Architecture
 
 ```
-health = 0.5 + success_rate × 0.3 + progress × 0.2
+mind/
+├── self_driver.py       ← Drive: health + VFM scoring + reflection
+├── state_manager.py     ← State: project / task / log management
+├── quality_score.py      ← Scoring: 5-dimension briefing quality
+└── memory/
+    └── memory_core.py   ← Memory: experience recall (remember / recall)
 ```
 
-| 分量 | 范围 | 说明 |
-|------|------|------|
-| 基础分 | 0.5 | 默认健康 |
-| 成功率分 | 0~0.3 | 最近5条日志含"完成/成功"的比例 |
-| 进度分 | 0~0.2 | 当前任务完成百分比 |
+**Closed loop**:
+```
+drive() → propose() generate proposals → score_action() VFM rank → execute
+                                                           ↓
+                              recall() retrieve ← remember() deposit
+```
 
-### 健康度阈值
+---
 
-| 健康度 | 状态 | 行动 |
-|--------|------|------|
-| < 0.3 | 危险 | 降低目标，拆解任务 |
-| 0.3~0.4 | 偏低 | 减少每次工作量 |
-| 0.4~0.7 | 尚可 | 保持节奏 |
-| ≥ 0.7 | 良好 | 挑战更多 |
+## Health System
 
-## VFM 提案评分
+### `calc_health(state) → float`
 
-### propose(state, context) → list[dict]
+```
+health = 0.4 + success*0.25 + progress*0.2 + momentum*0.1 - fail_penalty*0.15 + completion*0.1
+```
 
-根据当前状态生成改进提案列表：
+| Component | Range | Description |
+|-----------|-------|-------------|
+| Base | 0.4 | Starting point |
+| Success rate | 0~0.25 | Ratio of successful entries in last 5 logs |
+| Progress | 0~0.2 | Current task completion % |
+| Momentum | 0~0.1 | +0.1 if progress rising across last 3 entries |
+| Fail penalty | 0 or -0.15 | -0.15 if last 3 entries all failures |
+| Completion | 0 or +0.1 | +0.1 if any entry shows 100% completion |
 
-| 提案类型 | 触发条件 | expected_delta |
-|----------|----------|----------------|
-| 推进当前任务 | 有任务进行中 | 0.1 |
-| 从经验学习 | 最近有成功日志 | 0.05 |
-| 拆解任务 | 进度 < 30% | 0.08 |
-| 技能检查 | 总是包含 | 0.03 |
-| 知识沉淀 | 最近有核心发现 | 0.04 |
+### Health Thresholds
 
-### score_action(proposal, driver) → float
+| Health | Status | Action |
+|--------|--------|--------|
+| < 0.3 | Danger | Reduce scope, split into smallest testable units |
+| 0.3~0.4 | Low | Reduce workload per cycle, ensure deliverable progress |
+| 0.4~0.7 | OK | Maintain rhythm, focus on current step |
+| ≥ 0.7 | Good | Push forward, take on more |
 
-**VFM 公式**：`Value × Feasibility × Momentum × 100`
+---
 
-| 维度 | 计算方式 |
-|------|----------|
-| Value | expected_delta × 系数（低健康时系数更大）|
-| Feasibility | 0.7基础分，成功模式多时提升，连续低迷时降低 |
-| Momentum | 健康度≥0.6→0.9，≥0.4→0.6，<0.4→0.3 |
+## VFM Proposal Scoring
 
-### select_best_action(proposals, driver) → dict
+### `propose(state, context="") → list[dict]`
 
-对所有提案评分，返回得分最高者和完整评分列表。
+Generate improvement proposal list with `description`, `expected_delta_health`, `tags`.
 
-## 状态管理（state_manager）
+**Typical proposals**:
+
+| Proposal | Trigger | delta |
+|----------|---------|-------|
+| Push current task | Active task | 0.1 |
+| Learn from experience | Recent success log | 0.05 |
+| Split task → sub-tasks | Progress < 30% | 0.12 (per sub-task) |
+| Check skill updates | Always included | 0.03 |
+| Deposit knowledge | Recent core insight | 0.04 |
+
+When progress < 30%, `propose()` calls `_decompose_task()` which automatically breaks the task into 3-4 concrete sub-tasks based on keyword patterns:
+- **publish/upload** → prepare → execute → verify → conclude
+- **create/build** → plan → build → test → complete
+- **research/explore** → research → analyze → conclude → archive
+- **fix/debug** → locate → fix → verify → deposit lesson
+- **organize/sync** → inventory → classify → verify → update index
+- **default** → define goal → execute → verify → conclude
+### `score_action(proposal, driver) → float`
+
+**VFM formula**: `Value × Feasibility × Momentum × 100`
+
+- **Value**: Higher delta proposals worth more when health is low
+- **Feasibility**: Boosted by past success patterns, reduced by consecutive lows
+- **Momentum**: Health ≥0.6 → 0.9, ≥0.4 → 0.6, <0.4 → 0.3
+
+### `select_best_action(proposals, driver) → dict`
+
+Returns top-scored proposal with full ranking table.
+
+---
+
+## Experience Memory
+
+### `remember(experience, source, tags) → None`
+
+Deposit a task result or insight into experience DB.
+
+```python
+remember("Docker network conflict solved — must specify --subnet explicitly",
+         source="task", tags=["docker", "debug"])
+```
+
+### `recall_experiences(query, tags, limit) → list[dict]`
+
+Retrieve relevant experiences semantically.
+
+```python
+results = recall_experiences("docker", limit=3)
+for r in results:
+    print(r['task_intent'], '|', r['key_insight'][:60])
+```
+
+---
+
+## State Management
 
 ```python
 from state_manager import push_project, set_task, add_log
 
-push_project(name, goal, status)  # 创建/更新项目
-set_task(task, step, total, next_action)  # 设置当前任务进度
-add_log(entry)  # 追加日志
+push_project("project-name", "goal description", "active")
+set_task("task name", 2, 5, "next action")
+add_log("heartbeat 10:00: completed module A")
 ```
 
-详细接口见 [references/state-manager.md](references/state-manager.md)
+---
 
-## 经验记忆协同
-
-brain 执行结果自动交给 memory-skill 沉淀：
-
-```python
-# 执行后记住经验
-remember(f"任务完成。关键认知：...", source="brain")
-
-# 遇到新任务前检索
-results = recall_experiences("相关关键词")
-```
-
-详见 `memory-skill` skill。
-
-## CLI 用法
+## CLI Usage
 
 ```bash
-# 主循环
-python3 self_driver.py              # → {action, health, reflect}
+# Main loop
+python3 self_driver.py
 
-# 查看引擎状态
-python3 self_driver.py status      # → {health, patterns, ...}
+# Engine status
+python3 self_driver.py status
 
-# 提案评分报告
-python3 self_driver.py propose     # → 完整评分表格
+# Proposal scoring report
+python3 self_driver.py propose
 ```
 
-## 文件索引
+---
 
-| 文件 | 作用 |
-|------|------|
-| `scripts/self_driver.py` | 自驱力引擎核心 |
-| `scripts/state_manager.py` | 状态管理 |
-| `scripts/quality_score.py` | 简报质量评分 |
-| `references/state-manager.md` | state_manager 完整接口文档 |
-| `references/vfm-design.md` | VFM 评分设计笔记 |
+## Reflection Questions (triggered when health < 0.4)
+
+1. Where is the current task stuck? Is it a logic problem or execution problem?
+2. Is there past experience I can apply here?
+3. Is this step actually worth doing, or am I avoiding something more critical?
+4. If I had to solve this tomorrow, what's the minimum I should finish today?
+5. Have I broken this problem down small enough?
+
+---
+
+## File Index
+
+| File | Purpose |
+|------|---------|
+| `scripts/self_driver.py` | Self-driver core |
+| `scripts/state_manager.py` | State management |
+| `scripts/quality_score.py` | Briefing quality scorer |
+| `scripts/memory/memory_core.py` | Experience memory core |
+| `references/state-manager.md` | state_manager full API |
+| `references/vfm-design.md` | VFM scoring design details |
