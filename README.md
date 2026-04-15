@@ -1,4 +1,4 @@
-# 🧠 mind
+# mind
 
 > Your self-evolving AI agent engine — drives itself, learns from experience.
 
@@ -56,4 +56,4 @@ clawhub install mind --registry https://cn.clawhub-mirror.com
 
 ## 📄 README in other languages
 
-[🇨🇳 中文](docs/README_zh.md) · [🇺🇸 English](docs/README_en.md)
+[中文](docs/README_zh.md) · [English](docs/README_en.md)
