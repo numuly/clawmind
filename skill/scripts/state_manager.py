@@ -50,7 +50,7 @@ def set_task(task: str, step: int, total: int, next_action: str):
 
 
 def add_log(entry: str):
-    """追加执行日志"""
+    """追加执行日志，防重复写入"""
     state = _load()
     state["log"].append({
         "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
