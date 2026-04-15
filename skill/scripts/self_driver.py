@@ -6,6 +6,7 @@ mini_self_driver — 轻量自驱力引擎
 """
 
 import os
+import re
 import json
 import time
 from datetime import datetime
@@ -30,28 +31,79 @@ def _save(path: str, data: dict):
 
 # ----------------- 健康度计算 -----------------
 
+def _parse_progress(entry: str) -> int:
+    """从日志条目中提取进度数字（0~100），提取失败返回 -1"""
+    m = re.search(r'(\d+)%', entry)
+    if m:
+        return int(m.group(1))
+    if any(kw in entry for kw in ['完成', 'done', '成功', '✅', 'completed']):
+        return 100
+    return -1
+
+
+def _is_success(entry: str) -> bool:
+    """判断日志条目是否为成功。正向词存在且无负向词才算成功。"""
+    neg_kw = ['失败', '卡住', '❌', 'error', 'err', 'failed', 'stuck']
+    pos_kw = ['完成', '成功', '✅', 'done', 'completed', 'pass']
+    if any(kw in entry for kw in neg_kw):
+        return False
+    # 英文词用词边界匹配，避免 ClawHub → ok 这类误匹配
+    for kw in ['done', 'completed', 'pass']:
+        if re.search(r'(?<![a-zA-Z])' + kw + r'(?![a-zA-Z])', entry, re.IGNORECASE):
+            return True
+    return any(kw in entry for kw in ['完成', '成功', '✅'])
+
+
 def calc_health(state: dict) -> float:
     """
     计算当前任务执行健康度（0.0 ~ 1.0）
-    公式：基础分(0.5) + 成功率分(0~0.3) + 进度分(0~0.2)
+    多信号加权：基础分 + 成功率 + 进度 + 势头 + 连续失败惩罚
+    
+    公式：0.4 + success*0.25 + progress*0.2 + momentum*0.1
+          - consecutive_failure*0.15 + completion*0.1
     """
     log = state.get("log", [])
+    task = state.get("current_task", {})
+    
     if not log:
-        return 0.5  # 无日志，默认健康
+        return 0.5
 
-    # 最近 5 条日志中成功的比例
     recent = log[-5:]
-    successes = sum(1 for e in recent if any(
-        kw in e.get("entry", "") for kw in ["完成", "成功", "done", "ok"]
-    ))
-    success_rate = successes / len(recent)
-
-    # 进度
-    task = state.get("current_task")
-    progress = task.get("progress_pct", 0) / 100 if task else 0
-
-    health = 0.5 + success_rate * 0.3 + progress * 0.2
-    return min(1.0, max(0.0, health))
+    
+    # 1. 成功率分（0~0.25）
+    successes = sum(1 for e in recent if _is_success(e.get("entry", "")))
+    total_checked = sum(1 for e in recent if _parse_progress(e.get("entry", "")) >= 0)
+    success_rate = successes / max(total_checked, 1)
+    success_score = success_rate * 0.25
+    
+    # 2. 进度分（0~0.2）
+    current_progress = task.get("progress_pct", 0)
+    progress_score = (current_progress / 100) * 0.2
+    
+    # 3. 势头分（0~0.1）：progress 是否在上升
+    momentum_score = 0.05  # 默认中等势头
+    progress_values = []
+    for e in recent:
+        pv = _parse_progress(e.get("entry", ""))
+        if pv >= 0:
+            progress_values.append(pv)
+    if len(progress_values) >= 3:
+        # 最近3条是否递增
+        if progress_values[-1] > progress_values[-2] > progress_values[-3]:
+            momentum_score = 0.1  # 上升势头
+        elif progress_values[-1] < progress_values[-2]:
+            momentum_score = 0.0  # 下降势头
+    
+    # 4. 连续失败惩罚（0 或 -0.15）
+    last_3 = [e.get("entry", "") for e in recent[-3:]]
+    failures = [e for e in last_3 if not _is_success(e) and _parse_progress(e) < 0]
+    fail_penalty = 0.15 if len(failures) == 3 else 0.0
+    
+    # 5. 完成奖励（+0.1）：任何条目达到 100%
+    completion_bonus = 0.1 if any(_parse_progress(e.get("entry", "")) == 100 for e in recent) else 0.0
+    
+    health = 0.4 + success_score + progress_score + momentum_score - fail_penalty + completion_bonus
+    return min(1.0, max(0.0, round(health, 3)))
 
 
 def should_reflect(health: float, threshold: float = 0.4) -> bool:
@@ -168,18 +220,62 @@ def get_driver_status() -> dict:
     }
 
 
-def get_driver_status() -> dict:
-    driver = _load(DRIVER_FILE)
-    return {
-        "health": driver.get("last_health", None),
-        "consecutive_low": driver.get("consecutive_low", 0),
-        "last_check": driver.get("last_check_time", "从未"),
-        "last_reflect": driver.get("last_reflect_time", "从未"),
-        "pattern_count": len(driver.get("patterns", [])),
-    }
-
-
 # ==================== VFM 评分体系 ====================
+# ==================== 任务自动拆解 ====================
+
+def _extract_steps(task_name: str) -> list[str]:
+    t = task_name.lower()
+    if any(kw in t for kw in ['发布', '上传', 'publish', 'upload', 'push']):
+        return [f"准备「{task_name}」所需的材料与环境",
+                f"执行「{task_name}」的核心操作",
+                f"验证「{task_name}」的结果是否正确",
+                f"收尾并更新状态为完成"]
+    if any(kw in t for kw in ['创建', '开发', 'build', 'create', '实现']):
+        return [f"规划「{task_name}」的实现方案",
+                f"构建核心代码/文件",
+                f"测试并修复问题",
+                f"完成并整理产出"]
+    if any(kw in t for kw in ['研究', '探索', 'research', 'explore', '分析']):
+        return [f"调研「{task_name}」的相关资料",
+                f"深入分析核心问题",
+                f"提炼结论与产出",
+                f"归档到 Obsidian / 记忆系统"]
+    if any(kw in t for kw in ['修复', 'fix', 'debug', '解决', '调试']):
+        return [f"定位「{task_name}」的根本原因",
+                f"实施修复方案",
+                f"验证修复是否有效",
+                f"沉淀教训到经验库"]
+    if any(kw in t for kw in ['整理', '归档', 'organize', 'sync', '同步']):
+        return [f"清点「{task_name}」的现有资产",
+                f"按结构分类整理",
+                f"验证整理结果",
+                f"更新索引和引用路径"]
+    return [f"明确「{task_name}」的具体目标",
+            f"执行核心步骤",
+            f"验证执行结果",
+            f"收尾并更新状态"]
+
+def _decompose_task(state: dict) -> list[dict]:
+    task = state.get("current_task", {})
+    task_name = task.get("task", "")
+    progress = task.get("progress_pct", 0)
+    if not task_name:
+        return []
+    steps = _extract_steps(task_name)
+    step_size = 100.0 / len(steps)
+    proposals = []
+    for i, step in enumerate(steps):
+        sub_task_name = f"[{i+1}/{len(steps)}] {step}"
+        proposals.append({
+            "description": sub_task_name,
+            "expected_delta_health": 0.12,
+            "tags": ["subtask", task_name[:20]],
+            "parent_task": task_name,
+            "step_index": i + 1,
+            "total_steps": len(steps)
+        })
+    return proposals
+
 
 def propose(state: dict, context: str = "") -> list[dict]:
     """
@@ -210,13 +306,17 @@ def propose(state: dict, context: str = "") -> list[dict]:
                 "tags": ["memory", "learning"]
             })
 
-    # 3. 拆解提案（如果进度卡住）
+    # 3. 拆解提案（如果进度卡住 → 真实生成子任务）
     if progress < 30:
-        proposals.append({
-            "description": "拆解当前任务为更小的可测试单元",
-            "expected_delta_health": 0.08,
-            "tags": ["planning", "task"]
-        })
+        sub_tasks = _decompose_task(state)
+        if sub_tasks:
+            proposals.extend(sub_tasks)
+        else:
+            proposals.append({
+                "description": "拆解当前任务为更小的可测试单元",
+                "expected_delta_health": 0.08,
+                "tags": ["planning", "task"]
+            })
 
     # 4. 技能检查提案（周期性）
     proposals.append({
