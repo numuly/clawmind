@@ -98,11 +98,9 @@ clawmind/
 
 ## Install
 
-Download `clawmind.skill` from the [latest release](https://github.com/numuly/clawmind/releases/latest) and install via ClawHub:
+Download `clawmind.skill` from the [latest release](https://github.com/numuly/clawmind/releases/latest) and install via OpenClaw Skill Manager.
 
-```bash
-clawhub install clawmind --registry https://cn.clawhub-mirror.com
-```
+> **Note**: ClawHub slug `clawmind` is already taken. Please download directly from GitHub Releases.
 
 ---
 
