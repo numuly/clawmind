@@ -78,6 +78,81 @@ def _is_success(entry: str) -> bool:
     return False
 
 
+def _probe_blindspots(state: dict) -> list:
+    """
+    主动探测系统潜在盲点。在没有任何外部反馈的情况下，
+    通过分析状态内部数据发现可能存在的问题。
+    这是 L3（主动发现层）的核心实现。
+    """
+    issues = []
+
+    # 1. 检查成功率是否虚高（全部成功 = 可能是评估标准太宽松）
+    patterns = state.get("driver", {}).get("patterns", [])
+    recent = patterns[-10:] if patterns else []
+    if recent:
+        success_count = sum(1 for p in recent if p.get("type") == "success")
+        if success_count == len(recent) and len(recent) >= 5:
+            issues.append({
+                "type": "blindspot",
+                "detail": "近期5次以上全部成功，可能是评估标准太宽松，或只记录了顺利的情况",
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            })
+
+    # 2. 检查是否有长期无进展的活跃项目
+    for proj in state.get("projects", []):
+        if proj.get("status") != "active":
+            continue
+        last_log = proj.get("last_log_time", "")
+        if last_log:
+            try:
+                from datetime import timedelta
+                last_dt = datetime.strptime(last_log, "%Y-%m-%d %H:%M:%S")
+                days_ago = (datetime.now() - last_dt).days
+                if days_ago >= 7:
+                    issues.append({
+                        "type": "blindspot",
+                        "detail": f"项目「{proj.get('name', '未知')}」已有{days_ago}天无进展，可能遇到隐性障碍",
+                        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    })
+            except:
+                pass
+
+    # 3. 检查是否有重复失败模式（相同关键词反复出现）
+    if len(patterns) >= 5:
+        fail_patterns = [p for p in patterns if p.get("type") == "failure"]
+        if len(fail_patterns) >= 3:
+            fail_contexts = [p.get("context", "") for p in fail_patterns[-5:]]
+            # 检查是否每次失败都包含相同的关键词
+            keywords = ["失败", "错误", "无法完成", "没有进展"]
+            matched = [kw for kw in keywords if any(kw in ctx for ctx in fail_contexts)]
+            if len(matched) >= 2:
+                issues.append({
+                    "type": "blindspot",
+                    "detail": f"多次失败出现相同类型错误：{', '.join(matched)}，可能是系统性缺陷而非偶发问题",
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                })
+
+    # 4. 检查是否有未完成的心跳任务长期悬空
+    task = state.get("current_task", {})
+    if task.get("task") and task.get("progress_pct", 0) < 100:
+        updated = task.get("updated_at", "")
+        if updated:
+            try:
+                from datetime import timedelta
+                updated_dt = datetime.strptime(updated, "%Y-%m-%d %H:%M:%S")
+                days_ago = (datetime.now() - updated_dt).days
+                if days_ago >= 3 and task.get("progress_pct", 0) == 0:
+                    issues.append({
+                        "type": "blindspot",
+                        "detail": f"当前任务「{task.get('task', '未知')}」3天以上无进展，可能遇到障碍或目标已失效",
+                        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    })
+            except:
+                pass
+
+    return issues
+
+
 def calc_health(state: dict) -> float:
     """
     计算当前任务执行健康度（0.0 ~ 1.0）
@@ -253,6 +328,12 @@ def drive():
             "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         })
         state["driver"]["patterns"] = state["driver"]["patterns"][-20:]
+    # 主动探测盲点（无外部反馈时的自我发现问题）
+    blindspots = _probe_blindspots(state)
+    if blindspots:
+        state["driver"]["blindspots"] = blindspots
+        state["driver"]["last_blindspot_check"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     _prune_log(state)
     _dedup_projects(state)
 
@@ -283,6 +364,8 @@ def get_driver_status() -> dict:
         "last_check": d.get("last_check_time", "从未"),
         "last_reflect": d.get("last_reflect_time", "从未"),
         "pattern_count": len(d.get("patterns", [])),
+        "last_blindspot_check": d.get("last_blindspot_check", "从未"),
+        "blindspot_count": len(d.get("blindspots", [])),
     }
 
 
