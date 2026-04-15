@@ -241,17 +241,17 @@ def drive():
         action = "push_forward"  # 状态好，可以挑战更多
         state["driver"]["consecutive_low"] = 0  # 重置低健康计数器
 
-    # 自动记录学习模式
+    # 自动记录学习模式（用 _is_success 严格判断）
     log = state.get("log", [])
     if log:
-        last = log[-1].get("entry", "")
-        if "完成" in last or "成功" in last:
-            state["driver"].setdefault("patterns", []).append({
-                "type": "success",
-                "context": last[:50],
-                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            })
-            state["driver"]["patterns"] = state["driver"]["patterns"][-20:]
+        last_entry = log[-1].get("entry", "")
+        is_ok = _is_success(last_entry)
+        state["driver"].setdefault("patterns", []).append({
+            "type": "success" if is_ok else "failure",
+            "context": last_entry[:50],
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        state["driver"]["patterns"] = state["driver"]["patterns"][-20:]
     _prune_log(state)
     _dedup_projects(state)
     _save_state(state)
