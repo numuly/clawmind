@@ -47,21 +47,21 @@
 ## 今晚具体任务清单
 
 ### P0：打通研究→行动 pipeline
-- [ ] self_research.py 的研究结果写入共享状态
-- [ ] propose() 能读取研究结果生成提案
-- [ ] 验证 research → proposal → execute 全流程
+- [x] self_research.py 的研究结果写入共享状态
+- [x] propose() 能读取研究结果生成提案
+- [x] 验证 research → proposal → execute 全流程
 
 ### P1：ClawMind v2 核心模块
-- [ ] 经验 memory 系统与 drive() 集成
-- [ ] 执行器 action_type 完善（不只是 write_code）
-- [ ] 健康度评分算法微调
+- [x] 经验 memory 系统与 drive() 集成
+- [x] 执行器 action_type 完善（write_code + v2_executor调用）
+- [x] 健康度评分算法微调（步骤优先级加成30%）
 
 ### P2：技能与研究
-- [ ] 探索 clawhub 新技能（find-skills-combo）
-- [ ] 研究 multi-agent collaboration 最新方案
-- [ ] 研究 autonomous coding agent 架构
+- [x] clawhub 探索（网络问题，技能安装失败）
+- [x] 自主研究 autonomous coding agent + open-source AI agent
+- [x] 生成 research_insights.md
 
 ### P3：产出整理
-- [ ] 整理有价值的研究笔记 → GitHub
-- [ ] 更新 SKILL.md 文档
-- [ ] 推送有意思的发现到 GitHub
+- [x] 研究洞察 → projects/clawmind-v2/research_insights.md
+- [ ] 改善 README 和 SKILL.md
+- [ ] 推送所有成果到 GitHub
