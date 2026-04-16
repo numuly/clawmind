@@ -1,0 +1,32 @@
+{
+  "saved_at": "2026-04-16 23:07:18",
+  "current_task": {
+    "task": "ClawMind v2 规划实施",
+    "progress_pct": 10
+  },
+  "next_action": "[1/4] 明确「ClawMind v2 规划实施」的具体目标",
+  "projects": [
+    {
+      "name": "clawmind-v2-plan",
+      "status": "active",
+      "progress_pct": 10,
+      "last_log_time": "2026-04-16 23:00:00",
+      "note": "v2 规划进行中：经验持久化 + 执行器 + 研究→行动 pipeline"
+    }
+  ],
+  "log_tail": [],
+  "driver": {
+    "turn_index": 1,
+    "last_health": 0.5,
+    "last_exploration": {
+      "action": "continue",
+      "health": 0.5,
+      "time": "2026-04-16 23:07:18"
+    }
+  },
+  "last_drive": {
+    "action": "continue",
+    "health": 0.5,
+    "status_update": "[继续] 健康度 0.50。任务「ClawMind v2 规划实施」（10%） | 第 1 轮"
+  }
+}

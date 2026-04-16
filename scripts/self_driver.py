@@ -488,6 +488,13 @@ def drive():
         "time": now_str,
     }
 
+    # ── 提案评分 + 选择最优动作（原只在 CLI 调用，现集成到 drive） ───────
+    if action != "reflect":
+        proposals = propose(state)
+        best = select_best_action(proposals, driver)
+        state["next_action"] = best.get("description", "待定")
+        _mark_dirty()
+
     _save_state(state)
 
     # ── v2 新增 ──────────────────────────────────────
