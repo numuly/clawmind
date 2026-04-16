@@ -432,3 +432,17 @@ _自动生成 07:34:56_
 
 **洞察**: 
 
+
+---
+## 自主探索: context compression LLM
+_自动生成 07:49:57_
+
+**方向**: context compression LLM
+**共性**: The Context Optimization Layer for LLM Applications
+
+- **chopratejas/headroom** (1354⭐): The Context Optimization Layer for LLM Applications
+- **Context-Engine-AI/Context-Engine** (382⭐): Context-Engine MCP - Agentic Context Compression Suite
+- **quantumaikr/quant.cpp** (382⭐): LLM inference with 7x longer context. Pure C, zero dependencies. Lossless KV cache compression + sin
+
+**洞察**: 
+
