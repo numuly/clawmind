@@ -1,6 +1,6 @@
 # ClawMind
 
-> 你的自主进化 AI 搭档 — 自动驱动、从经验中学习、不再重蹈覆辙。
+> OpenClaw的自主进化 AI 搭档 — 自动驱动、从经验中学习、不再重蹈覆辙。
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue)](https://python.org)
 [![MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
