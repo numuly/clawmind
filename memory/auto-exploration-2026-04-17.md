@@ -40,3 +40,31 @@ _自动生成 00:34:04_
 
 **洞察**: 
 
+
+---
+## 自主探索: self-improving AI agent
+_自动生成 00:49:05_
+
+**方向**: self-improving AI agent
+**共性**: Letta is the platform for building stateful agents: AI with advanced memory that
+
+- **letta-ai/letta** (22100⭐): Letta is the platform for building stateful agents: AI with advanced memory that can learn and self-
+- **aden-hive/hive** (10046⭐): Multi-Agent Harness for Production AI
+- **chrisworsey55/atlas-gic** (1345⭐): ATLAS by General Intelligence Capital — Self-improving AI trading agents using Karpathy-style autore
+
+**洞察**: 
+
+
+---
+## 自主探索: multi-agent collaboration
+_自动生成 01:04:23_
+
+**方向**: multi-agent collaboration
+**共性**: The ultimate space for work and life — to find, build, and collaborate with agen
+
+- **lobehub/lobehub** (75268⭐): The ultimate space for work and life — to find, build, and collaborate with agent teammates that gro
+- **OpenBMB/ChatDev** (32734⭐): ChatDev 2.0: Dev All through LLM-powered Multi-Agent Collaboration
+- **abhi1693/openclaw-mission-control** (3698⭐): AI Agent Orchestration Dashboard - Manage AI agents, assign tasks, and coordinate multi-agent collab
+
+**洞察**: 
+
