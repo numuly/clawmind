@@ -26,6 +26,38 @@ STATE_FILE = f"{WORKSPACE}/state/current_state.json"
 
 
 # ── 动作执行器 ─────────────────────────────────────────────────
+def _do_completion_commit(state: dict) -> str:
+    """Step 4 完成后：标记项目完成 + git commit"""
+    import subprocess
+    try:
+        # 更新项目状态
+        for p in state.get("projects", []):
+            if "clawmind-v2" in p.get("name", ""):
+                p["status"] = "completed"
+                p["progress_pct"] = 100
+                p["completed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # 更新当前任务
+        task = state.get("current_task", {})
+        task["progress_pct"] = 100
+        _mark_dirty()
+        _save_state(state)
+
+        # git commit
+        os.chdir(WORKSPACE)
+        subprocess.run(["git", "add", "-A"], capture_output=True, timeout=10)
+        result = subprocess.run(
+            ["git", "commit", "-m", "feat: ClawMind v2 核心模块完成 — 执行器+研究pipeline+提案系统"],
+            capture_output=True, timeout=15, text=True
+        )
+        if result.returncode == 0:
+            return "项目完成 + git commit ✓"
+        elif "nothing to commit" in result.stderr.lower():
+            return "项目完成（无变化需提交）✓"
+        return f"git commit: {result.stderr[:50]}"
+    except Exception as e:
+        return f"完成处理: {e}"
+
+
 def execute_action(action: dict, state: dict) -> str:
     """
     执行一个 action dict，返回执行描述。
@@ -42,7 +74,12 @@ def execute_action(action: dict, state: dict) -> str:
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "w") as f:
                 f.write(content)
-            return f"写入文件 {path}（{len(content)} chars）"
+            result = f"写入文件 {path}（{len(content)} chars）"
+
+            # step 4 completion: 触发 git commit + 项目完成
+            if "completion_summary" in path:
+                result += " | " + _do_completion_commit(state)
+            return result
 
     elif action_type == "write_note":
         date = datetime.now().strftime("%Y-%m-%d")

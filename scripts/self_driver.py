@@ -716,6 +716,30 @@ def _extract_research_proposals() -> list[dict]:
     return proposals
 
 
+def _get_remaining_steps(state: dict) -> list[tuple]:
+    """
+    返回当前任务未完成的 [n/m] 步骤列表。
+    每个元素: (description, expected_delta_health)
+    """
+    task = state.get("current_task", {})
+    task_name = task.get("task", "") or ""
+    done_steps = set(state.get("_done_steps", []))
+
+    all_steps = [
+        ("[1/4] 明确「ClawMind v2 规划实施」的具体目标", 0.12),
+        ("[2/4] 执行核心步骤", 0.12),
+        ("[3/4] 验证执行结果", 0.12),
+        ("[4/4] 收尾并更新状态为完成", 0.12),
+    ]
+
+    remaining = []
+    for desc, delta in all_steps:
+        m = re.match(r"^\[(\d+)/\d+\]\s*", desc)
+        if m and m.group(1) not in done_steps:
+            remaining.append((desc, delta))
+    return remaining
+
+
 def propose(state: dict, context: str = "") -> list[dict]:
     """
     根据当前状态和上下文生成改进提案列表。
@@ -755,6 +779,17 @@ def propose(state: dict, context: str = "") -> list[dict]:
                 "description": "拆解当前任务为更小的可测试单元",
                 "expected_delta_health": 0.08,
                 "tags": ["planning", "task"]
+            })
+
+    # 3b. 步骤推进（进度 > 30 时，继续推进未完成步骤）
+    # 即使进度较高，也要保证未完成步骤能被选中
+    if progress >= 30 and progress < 100:
+        remaining_steps = _get_remaining_steps(state)
+        for step_desc, delta in remaining_steps:
+            proposals.append({
+                "description": step_desc,
+                "expected_delta_health": delta,
+                "tags": ["continue", "task"]
             })
 
     # 4. 技能检查提案（周期性）
@@ -849,6 +884,12 @@ def score_action(proposal: dict, driver: dict) -> float:
         momentum = 0.3
 
     score = value * feasibility * momentum * 100
+
+    # 步骤提案（[n/m] 格式）优先：未完成的子步骤应优先执行
+    desc = proposal.get("description", "")
+    if re.match(r"^\[\d+/\d+\]\s*", desc):
+        score *= 1.3  # 步骤提案优先级提高 30%
+
     return round(score, 1)
 
 
