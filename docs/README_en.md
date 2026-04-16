@@ -100,7 +100,7 @@ clawmind/
 
 Download `clawmind.skill` from the [latest release](https://github.com/numuly/clawmind/releases/latest) and install via OpenClaw Skill Manager.
 
-> **Note**: ClawHub slug `clawmind` is already taken. Please download directly from GitHub Releases.
+> **ClawHub install**: clawhub install clawmind-vfm --registry https://cn.clawhub-mirror.com
 
 ---
 
