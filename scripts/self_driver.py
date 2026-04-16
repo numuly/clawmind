@@ -493,6 +493,8 @@ def drive():
         proposals = propose(state)
         best = select_best_action(proposals, driver)
         state["next_action"] = best.get("description", "待定")
+        # 存储完整提案供执行层使用（包含 tags、score 等元数据）
+        state["_best_proposal"] = best
         _mark_dirty()
 
     _save_state(state)
@@ -788,6 +790,22 @@ def propose(state: dict, context: str = "") -> list[dict]:
     # ── 代码审计层：分析自身源码，生成具体改进提案 ────────────────
     audit_proposals = _audit_self_driver()
     proposals.extend(audit_proposals)
+
+    # ── 过滤：排除已完成步骤 [n/m]，避免重复执行 ────────────────
+    done_steps = state.get("_done_steps", [])
+    if done_steps:
+        proposals = [
+            p for p in proposals
+            if not any(
+                re.match(rf"^\[({s})/\d+\]\s*", p.get("description", ""))
+                for s in done_steps
+            )
+        ]
+
+    # 过滤：排除过于宽泛的推进类提案（如果已有具体步骤在队列）
+    has_step_proposals = any(re.match(r"^\[\d+/\d+\]\s*", p.get("description", "")) for p in proposals)
+    if has_step_proposals:
+        proposals = [p for p in proposals if not p.get("description", "").startswith("推进当前任务")]
 
     return proposals
 

@@ -275,6 +275,41 @@ print('best:', best['description'], 'score:', best['score'])
     }}
 
 
+def _try_run_v2_executor(state: dict, proposal: dict) -> str:
+    """
+    如果 v2_executor.py 存在，尝试导入并调用其 execute_v2_action()。
+    返回执行结果描述。
+    """
+    import sys, importlib.util, re
+    executor_path = os.path.join(WORKSPACE, "scripts", "v2_executor.py")
+    if not os.path.exists(executor_path):
+        return "v2_executor.py 不存在，跳过"
+
+    try:
+        # 动态导入
+        spec = importlib.util.spec_from_file_location("v2_executor", executor_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        if hasattr(mod, "execute_v2_action"):
+            result = mod.execute_v2_action(proposal, state)
+
+            # 更新进度
+            task = state.get("current_task", {})
+            progress = task.get("progress_pct", 0)
+            step_match = re.search(r"\[(\d+)/\d+\]\s*(.+)", proposal.get("description", ""))
+            if step_match:
+                step_num = int(step_match.group(1))
+                new_progress = min(100, int(step_num / 4 * 100))
+                task["progress_pct"] = new_progress
+                _mark_dirty()
+                _save_state(state)
+            return f"v2执行器完成: {result} (进度→{new_progress}%)"
+        return "v2_executor.py 无 execute_v2_action 函数"
+    except Exception as e:
+        return f"v2_executor 执行失败: {e}"
+
+
 def proposal_to_action(proposal: dict, state: dict) -> dict:
     """
     将 propose() 返回的提案转换为可执行 action dict。
@@ -330,28 +365,34 @@ def run():
 
     executed_desc = ""
 
-    if next_action and next_action not in ("无", "暂无", "待定"):
-        print(f"  解析 next_action: {next_action[:60]}")
-        action_dict = parse_next_action(next_action, state)
-
-        # 无法解析为可执行动作 → 调用 propose() 生成具体步骤
-        if action_dict.get("type") == "noop":
-            print(f"  复杂任务，调用 propose() 生成具体步骤")
-            from self_driver import propose, select_best_action
-            proposals = propose(state, context=next_action)
-            if proposals:
-                # VFM 评分：选得分最高的提案（修复：之前总是选 proposals[0]）
-                best = select_best_action(proposals, state.get("driver", {}))
-                action_dict = proposal_to_action(best, state)
-                print(f"  提案: {best.get('description','')[:60]} (score={best.get('score',0)})")
-                # 把剩余提案写回 next_action
-                remaining = "; ".join(p.get("description","") for p in proposals[1:])
-                state["next_action"] = remaining if remaining else "待定"
-            else:
-                action_dict = {"type": "noop", "detail": {}}
-
+    # ── 执行最优提案（使用 drive() 已选出的 best，避免重复评分） ───
+    best_proposal = state.get("_best_proposal")
+    if best_proposal and next_action and next_action not in ("无", "暂无", "待定"):
+        desc = best_proposal.get("description", "")[:60]
+        print(f"  执行提案: {desc} (score={best_proposal.get('score', 0)})")
+        action_dict = proposal_to_action(best_proposal, state)
         executed_desc = execute_action(action_dict, state)
         print(f"  执行结果: {executed_desc}")
+
+        # v2 executor 集成：如果生成了 v2_executor.py，尝试调用它
+        if action_dict.get("type") == "write_code":
+            path = action_dict.get("detail", {}).get("path", "")
+            if "v2_executor.py" in path:
+                executed_desc = _try_run_v2_executor(state, best_proposal)
+                print(f"  v2执行器: {executed_desc}")
+
+        # ── 步骤推进：记录已完成步骤，下次 drive() 不会重复选中 ───
+        import re
+        desc_text = best_proposal.get("description", "")
+        step_match = re.match(r"\[(\d+)/(\d+)\]\s*", desc_text)
+        if step_match:
+            done_steps = set(state.get("_done_steps", []))
+            done_steps.add(step_match.group(1))
+            state["_done_steps"] = list(done_steps)
+            # 更新任务进度
+            task = state.get("current_task", {})
+            task["progress_pct"] = min(100, int(int(step_match.group(1)) / 4 * 100))
+            _mark_dirty()
 
         # 更新日志
         state["log"].append({
