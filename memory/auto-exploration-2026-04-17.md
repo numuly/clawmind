@@ -418,3 +418,17 @@ _自动生成 07:19:55_
 
 **洞察**: 
 
+
+---
+## 自主探索: tool calling agent
+_自动生成 07:34:56_
+
+**方向**: tool calling agent
+**共性**: LangChain4j is an open-source Java library that simplifies the integration of LL
+
+- **langchain4j/langchain4j** (11637⭐): LangChain4j is an open-source Java library that simplifies the integration of LLMs into Java applica
+- **aipotheosis-labs/aci** (4754⭐): ACI.dev is the open source tool-calling platform that hooks up 600+ tools into any agentic IDE or cu
+- **IBM/mcp-context-forge** (3581⭐): An AI Gateway, registry, and proxy that sits in front of any MCP, A2A, or REST/gRPC APIs, exposing a
+
+**洞察**: 
+

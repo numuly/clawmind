@@ -21,6 +21,7 @@ sys.path.insert(0, f"{WORKSPACE}/scripts")
 # ── 加载 ClawMind ───────────────────────────────────────────────
 from self_driver import drive, _load_state, _save_state, _mark_dirty, _prune_log
 from state_manager import save_session_context
+from todo_runner import tick as todo_tick, add_task, get_todo
 
 STATE_FILE = f"{WORKSPACE}/state/current_state.json"
 
@@ -393,6 +394,11 @@ def run():
 
     print(f"  健康度: {health} | 行动: {action_taken}")
     print(f"  状态: {status_update}")
+
+    # ── Todo 超时检查 ──────────────────────────────────────────
+    todo_result = todo_tick()
+    if todo_result and "无任务" not in todo_result and "已完成" not in todo_result:
+        print(f"  Todo: {todo_result}")
 
     # 2. 检查 next_action
     next_action = state.get("next_action", "")
