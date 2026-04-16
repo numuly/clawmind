@@ -678,6 +678,42 @@ def _audit_self_driver() -> list[dict]:
     return proposals[:5]  # 最多5个审计提案，避免冗余
 
 
+def _extract_research_proposals() -> list[dict]:
+    """
+    从最近的自主研究笔记中提取可执行提案。
+    打通 self_research → propose() pipeline 的关键环节。
+    """
+    proposals = []
+    try:
+        import glob
+        memory_dir = "/home/node/.openclaw/workspace/memory"
+        if not os.path.exists(memory_dir):
+            return proposals
+        # 读取最新的研究笔记（最多读最近3个）
+        files = sorted(glob.glob(os.path.join(memory_dir, "auto-exploration-*.md")))
+        if not files:
+            return proposals
+        recent = files[-3:]
+        research_insights = []
+        for fpath in recent:
+            with open(fpath) as f:
+                content = f.read()
+            # 提取项目名和共性描述
+            lines = content.split("\n")
+            for line in lines:
+                if line.startswith("**方向**") or line.startswith("- **"):
+                    research_insights.append(line.strip())
+        if research_insights:
+            proposals.append({
+                "description": f"分析近期研究成果：{' '.join(research_insights[:2])}",
+                "expected_delta_health": 0.07,
+                "tags": ["research", "analysis"],
+            })
+    except Exception:
+        pass
+    return proposals
+
+
 def propose(state: dict, context: str = "") -> list[dict]:
     """
     根据当前状态和上下文生成改进提案列表。
@@ -744,6 +780,10 @@ def propose(state: dict, context: str = "") -> list[dict]:
                 "expected_delta_health": 0.06,
                 "tags": ["blindspot", "fix"]
             })
+
+    # ── 研究层：从自主研究笔记中提取可执行提案 ────────────────
+    research_proposals = _extract_research_proposals()
+    proposals.extend(research_proposals)
 
     # ── 代码审计层：分析自身源码，生成具体改进提案 ────────────────
     audit_proposals = _audit_self_driver()
