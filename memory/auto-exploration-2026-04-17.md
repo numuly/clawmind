@@ -26,3 +26,17 @@ _自动生成 00:19:03_
 
 **洞察**: 
 
+
+---
+## 自主探索: agent skill creation
+_自动生成 00:34:04_
+
+**方向**: agent skill creation
+**共性**: FireRed-OpenStoryline is an AI video editing agent that transforms manual editin
+
+- **FireRedTeam/FireRed-OpenStoryline** (1931⭐): FireRed-OpenStoryline is an AI video editing agent that transforms manual editing into intention-dri
+- **pexoai/pexo-skills** (559⭐): A collection of open-source Agent Skills for content creation — images, audio, and video.
+- **Agents365-ai/video-podcast-maker** (467⭐): AI-powered video podcast creation skill for coding agents. Supports Bilibili & YouTube, multi-langua
+
+**洞察**: 
+
