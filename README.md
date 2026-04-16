@@ -107,7 +107,7 @@ clawmind/
 从 [最新发行版](https://github.com/numuly/clawmind/releases/latest) 下载 `clawmind.skill`，通过 ClawHub 安装：
 
 ```bash
-clawhub install clawmind --registry https://cn.clawhub-mirror.com
+clawhub install clawmind-vfm --registry https://cn.clawhub-mirror.com
 ```
 
 或直接将 `clawmind/` 文件夹复制到你的 skills 目录下。
