@@ -719,17 +719,21 @@ def _extract_research_proposals() -> list[dict]:
 def _get_remaining_steps(state: dict) -> list[tuple]:
     """
     返回当前任务未完成的 [n/m] 步骤列表。
-    每个元素: (description, expected_delta_health)
+    动态使用 _extract_steps 根据任务名生成步骤。
     """
     task = state.get("current_task", {})
     task_name = task.get("task", "") or ""
     done_steps = set(state.get("_done_steps", []))
 
+    if not task_name:
+        return []
+
+    # 使用 _extract_steps 动态生成步骤（修复：原来硬编码了 v2 的步骤）
+    step_names = _extract_steps(task_name)
+    total = len(step_names)
     all_steps = [
-        ("[1/4] 明确「ClawMind v2 规划实施」的具体目标", 0.12),
-        ("[2/4] 执行核心步骤", 0.12),
-        ("[3/4] 验证执行结果", 0.12),
-        ("[4/4] 收尾并更新状态为完成", 0.12),
+        (f"[{i+1}/{total}] {step}", 0.12)
+        for i, step in enumerate(step_names)
     ]
 
     remaining = []

@@ -52,15 +52,21 @@
   "projects": [
     {
       "name": "clawmind-v2-plan",
+      "status": "completed",
+      "progress_pct": 100,
+      "completed_at": "2026-04-17 00:20:00",
+      "note": "v2 核心完成：执行器+研究pipeline+提案系统"
+    },
+    {
+      "name": "clawmind-multi-agent",
       "status": "active",
-      "progress_pct": 50,
-      "last_log_time": "2026-04-16 23:00:00",
-      "note": "进行中：v2执行器已生成，研究→提案pipeline已打通"
+      "progress_pct": 0,
+      "note": "多智能体协作架构：将 self_research / drive / executor 分离为独立 agent"
     }
   ],
   "current_task": {
-    "task": "ClawMind v2 规划实施",
-    "progress_pct": 100
+    "task": "ClawMind 多智能体架构",
+    "progress_pct": 0
   },
   "driver": {
     "patterns": [
@@ -137,38 +143,11 @@
     },
     "last_log_entry_hash": 726529481599381084
   },
-  "next_action": "分析近期研究成果：**方向**: open-source AI agent - **x1xhlol/system-prompts-and-models-of-ai-tools** (135298⭐): FULL Augment Code, Claude Code, Cluely, CodeBuddy, Comet, Cursor, Devin AI, Junie, Kiro, Leap.new, L",
+  "next_action": "[1/3] 设计多智能体协作架构方案",
   "_dismissed_proposals": [
     "检查技能库"
   ],
   "last_updated": "2026-04-16 23:00:00",
-  "_best_proposal": {
-    "description": "分析近期研究成果：**方向**: open-source AI agent - **x1xhlol/system-prompts-and-models-of-ai-tools** (135298⭐): FULL Augment Code, Claude Code, Cluely, CodeBuddy, Comet, Cursor, Devin AI, Junie, Kiro, Leap.new, L",
-    "expected_delta_health": 0.07,
-    "tags": [
-      "research",
-      "analysis"
-    ],
-    "score": 13.2,
-    "all_scores": [
-      [
-        "分析近期研究成果：**方向**: open-source A",
-        13.2
-      ],
-      [
-        "从成功经验中提取模式，存入记忆",
-        9.5
-      ],
-      [
-        "检查技能库是否有可用更新或新技能",
-        5.7
-      ]
-    ]
-  },
-  "_done_steps": [
-    "1",
-    "2",
-    "3",
-    "4"
-  ]
+  "_best_proposal": null,
+  "_done_steps": []
 }
