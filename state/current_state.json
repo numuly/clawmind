@@ -2,15 +2,19 @@
   "driver": {
     "patterns": [],
     "consecutive_low": 0,
-    "turn_index": 1,
-    "last_turn_time": "2026-04-17 08:04:58",
-    "last_drive_time": "2026-04-17 08:04:58",
+    "turn_index": 2,
+    "last_turn_time": "2026-04-17 08:19:59",
+    "last_drive_time": "2026-04-17 08:19:59",
     "last_health": 0.5,
-    "last_check_time": "2026-04-17 08:04:58",
+    "last_check_time": "2026-04-17 08:19:59",
     "last_exploration": {
       "action": "continue",
       "health": 0.5,
-      "time": "2026-04-17 08:04:58"
+      "time": "2026-04-17 08:19:59"
+    },
+    "rhythm": {
+      "avg_interval_minutes": 15.02,
+      "last_interval_minutes": 15.02
     }
   },
   "next_action": "拆解当前任务为更小的可测试单元",
