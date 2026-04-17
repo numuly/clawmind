@@ -460,3 +460,17 @@ _自动生成 08:04:59_
 
 **洞察**: 
 
+
+---
+## 自主探索: open-source AI agent
+_自动生成 08:20:00_
+
+**方向**: open-source AI agent
+**共性**: FULL Augment Code, Claude Code, Cluely, CodeBuddy, Comet, Cursor, Devin AI, Juni
+
+- **x1xhlol/system-prompts-and-models-of-ai-tools** (135331⭐): FULL Augment Code, Claude Code, Cluely, CodeBuddy, Comet, Cursor, Devin AI, Junie, Kiro, Leap.new, L
+- **langchain-ai/langchain** (133790⭐): The agent engineering platform
+- **google-gemini/gemini-cli** (101499⭐): An open-source AI agent that brings the power of Gemini directly into your terminal.
+
+**洞察**: 
+

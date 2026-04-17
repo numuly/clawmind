@@ -402,3 +402,20 @@ KeyError: 'log'
 [08:04:58] 启动自主研究
 [08:04:58] 选择主题: autonomous coding agent (搜索: autonomous coding agent)
 [08:04:59] 写入研究笔记: autonomous coding agent | 5 个项目
+
+==================================================
+【心跳 2026-04-17 08:19:59】ClawMind 自主执行
+  健康度: 0.5 | 行动: continue
+  状态: [继续] 健康度 0.50。任务「无活跃任务」（0%） | 间隔 15.0min | 第 2 轮
+  执行提案: 拆解当前任务为更小的可测试单元 (score=11.5)
+  执行结果: 写入文件 projects/clawmind-v2/completion_summary.md（261 chars） | 项目完成 + git commit ✓
+Traceback (most recent call last):
+  File "/home/node/.openclaw/workspace/projects/self-improvement-research/heartbeat_runner.py", line 411, in <module>
+    run()
+  File "/home/node/.openclaw/workspace/projects/self-improvement-research/heartbeat_runner.py", line 382, in run
+    state["log"].append({
+    ~~~~~^^^^^^^
+KeyError: 'log'
+[08:19:59] 启动自主研究
+[08:19:59] 选择主题: open-source AI agent (搜索: open-source AI agent)
+[08:20:00] 写入研究笔记: open-source AI agent | 5 个项目
