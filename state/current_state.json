@@ -1,1 +1,40 @@
-{}
+{
+  "driver": {
+    "patterns": [],
+    "consecutive_low": 0,
+    "turn_index": 1,
+    "last_turn_time": "2026-04-17 08:04:58",
+    "last_drive_time": "2026-04-17 08:04:58",
+    "last_health": 0.5,
+    "last_check_time": "2026-04-17 08:04:58",
+    "last_exploration": {
+      "action": "continue",
+      "health": 0.5,
+      "time": "2026-04-17 08:04:58"
+    }
+  },
+  "next_action": "拆解当前任务为更小的可测试单元",
+  "_best_proposal": {
+    "description": "拆解当前任务为更小的可测试单元",
+    "expected_delta_health": 0.08,
+    "tags": [
+      "planning",
+      "task"
+    ],
+    "score": 11.5,
+    "all_scores": [
+      [
+        "拆解当前任务为更小的可测试单元",
+        11.5
+      ],
+      [
+        "分析近期研究成果：**方向**: open-source A",
+        8.8
+      ],
+      [
+        "检查技能库是否有可用更新或新技能",
+        3.8
+      ]
+    ]
+  }
+}
